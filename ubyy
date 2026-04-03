@@ -6,7 +6,7 @@ local Title = Instance.new("TextLabel")
 local RecordBtn = Instance.new("TextButton")
 local PlayBtn = Instance.new("TextButton")
 local ClearBtn = Instance.new("TextButton")
-local CloseBtn = Instance.new("TextButton") -- Tombol X
+local CloseBtn = Instance.new("TextButton") -- INI TOMBOL HIDE-NYA
 local StatusLabel = Instance.new("TextLabel")
 
 -- Setup GUI
@@ -84,7 +84,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Fungsi Record (Bisa record Lompat juga sekarang)
+-- Fungsi Record
 RecordBtn.MouseButton1Click:Connect(function()
     if isPlaying then return end
     isRecording = not isRecording

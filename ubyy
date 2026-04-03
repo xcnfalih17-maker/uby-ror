@@ -1,4 +1,4 @@
--- [[ UBY ULALA MENU - AUTO WALK + AUTO JUMP ]] --
+-- [[ UBY ULALA MENU V2.2 - HIDE BUTTON + JUMP RECORD ]] --
 
 local ScreenGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
@@ -6,6 +6,7 @@ local Title = Instance.new("TextLabel")
 local RecordBtn = Instance.new("TextButton")
 local PlayBtn = Instance.new("TextButton")
 local ClearBtn = Instance.new("TextButton")
+local CloseBtn = Instance.new("TextButton") -- Tombol X
 local StatusLabel = Instance.new("TextLabel")
 
 -- Setup GUI
@@ -14,31 +15,40 @@ ScreenGui.Name = "UbyUlalaMenu"
 
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 2
-MainFrame.BorderColor3 = Color3.fromRGB(0, 255, 200) -- Warna Cyan biar seger di HD 8490
+MainFrame.BorderColor3 = Color3.fromRGB(0, 255, 200)
 MainFrame.Position = UDim2.new(0.1, 0, 0.4, 0)
-MainFrame.Size = UDim2.new(0, 200, 0, 250)
+MainFrame.Size = UDim2.new(0, 200, 0, 260)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
 Title.Parent = MainFrame
 Title.Text = "UBY ULALA MENU"
 Title.Size = UDim2.new(1, 0, 0, 35)
-Title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 Title.TextColor3 = Color3.fromRGB(0, 255, 200)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
+Title.TextSize = 14
+
+-- Tombol X buat Hide
+CloseBtn.Parent = MainFrame
+CloseBtn.Text = "X"
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -35, 0, 2)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.BorderSizePixel = 0
+CloseBtn.Font = Enum.Font.GothamBold
 
 StatusLabel.Parent = MainFrame
 StatusLabel.Text = "Status: Ready!"
-StatusLabel.Position = UDim2.new(0, 0, 0.88, 0)
+StatusLabel.Position = UDim2.new(0, 0, 0.9, 0)
 StatusLabel.Size = UDim2.new(1, 0, 0, 20)
 StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 StatusLabel.BackgroundTransparency = 1
-StatusLabel.TextSize = 12
+StatusLabel.TextSize = 11
 
--- Tombol Style Helper
 local function styleBtn(btn, pos, color, text)
     btn.Parent = MainFrame
     btn.Size = UDim2.new(0, 160, 0, 35)
@@ -53,49 +63,53 @@ end
 
 styleBtn(RecordBtn, UDim2.new(0.1, 0, 0.2, 0), Color3.fromRGB(200, 50, 50), "Record Path")
 styleBtn(PlayBtn, UDim2.new(0.1, 0, 0.42, 0), Color3.fromRGB(50, 150, 50), "Play Path")
-styleBtn(ClearBtn, UDim2.new(0.1, 0, 0.64, 0), Color3.fromRGB(80, 80, 80), "Clear Data")
+styleBtn(ClearBtn, UDim2.new(0.1, 0, 0.64, 0), Color3.fromRGB(70, 70, 70), "Clear Data")
 
 -- LOGIC --
 local pathData = {}
 local isRecording = false
 local isPlaying = false
 
--- Fungsi Auto Jump (Raycast deteksi halangan)
-local function handleJump(character, humanoid)
-    local root = character:FindFirstChild("HumanoidRootPart")
-    if root then
-        -- Raycast 3 unit ke depan karakter
-        local params = RaycastParams.new()
-        params.FilterDescendantsInstances = {character}
-        params.FilterType = Enum.RaycastFilterType.Blacklist
-        
-        local result = workspace:Raycast(root.Position, root.CFrame.LookVector * 3, params)
-        if result and result.Instance.CanCollide then
-            humanoid.Jump = true
-        end
-    end
-end
+-- Fungsi Hide Menu
+CloseBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    print("UBY MENU: Tersembunyi! Tekan 'Insert' buat munculin lagi.")
+end)
 
--- Fungsi Record
+-- Munculin lagi pake tombol Insert di Keyboard
+local UserInputService = game:GetService("UserInputService")
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.Insert then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
+
+-- Fungsi Record (Bisa record Lompat juga sekarang)
 RecordBtn.MouseButton1Click:Connect(function()
     if isPlaying then return end
     isRecording = not isRecording
     
     if isRecording then
+        pathData = {}
         RecordBtn.Text = "STOP RECORD"
-        StatusLabel.Text = "Status: Recording Path..."
+        StatusLabel.Text = "Recording... (Jump Included)"
         task.spawn(function()
             while isRecording do
                 local char = game.Players.LocalPlayer.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    table.insert(pathData, char.HumanoidRootPart.Position)
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                local hum = char and char:FindFirstChild("Humanoid")
+                if root and hum then
+                    table.insert(pathData, {
+                        pos = root.Position,
+                        jumping = (hum.FloorMaterial == Enum.Material.Air)
+                    })
                 end
-                task.wait(0.2)
+                task.wait(0.15)
             end
         end)
     else
         RecordBtn.Text = "Record Path"
-        StatusLabel.Text = "Saved: "..#pathData.." points"
+        StatusLabel.Text = "Saved: "..#pathData.." pts"
     end
 end)
 
@@ -106,17 +120,16 @@ PlayBtn.MouseButton1Click:Connect(function()
     
     if isPlaying then
         PlayBtn.Text = "STOP PLAY"
-        StatusLabel.Text = "Status: Auto Walking..."
+        StatusLabel.Text = "Slebew Walking..."
         task.spawn(function()
             while isPlaying do
                 local char = game.Players.LocalPlayer.Character
                 local hum = char and char:FindFirstChild("Humanoid")
-                
                 if hum then
-                    for i, point in ipairs(pathData) do
+                    for i, data in ipairs(pathData) do
                         if not isPlaying then break end
-                        handleJump(char, hum) -- Loncat kalau ada halangan
-                        hum:MoveTo(point)
+                        if data.jumping then hum.Jump = true end
+                        hum:MoveTo(data.pos)
                         hum.MoveToFinished:Wait()
                     end
                 end
@@ -125,16 +138,14 @@ PlayBtn.MouseButton1Click:Connect(function()
         end)
     else
         PlayBtn.Text = "Play Path"
-        StatusLabel.Text = "Status: Idle"
+        StatusLabel.Text = "Status: Stopped"
     end
 end)
 
--- Fungsi Clear
+-- Clear Data
 ClearBtn.MouseButton1Click:Connect(function()
     pathData = {}
     isRecording = false
     isPlaying = false
-    RecordBtn.Text = "Record Path"
-    PlayBtn.Text = "Play Path"
-    StatusLabel.Text = "Status: Data Cleared"
+    StatusLabel.Text = "Data Cleared!"
 end)

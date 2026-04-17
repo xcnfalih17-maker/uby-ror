@@ -1,71 +1,242 @@
--- [[ UBY GOAT - SAVAGE PINK EDITION (ULTIMATE SHORTCUT) ]] --
--- SHORTCUT: K (Menu), L (Yahayuk), N (Linz) | FIXED: CLOSE BUTTON & ANTI-STUCK
+-- =====================================================================
+-- [[ UBY GOAT - SAVAGE PINK EDITION: THE ULTIMATE OVERHAUL ]]
+-- =====================================================================
+-- DEVELOPER: UBY GOAT
+-- ENGINE: LISSPLOIT / PRO-HITBOX V4
+-- FEATURES: MASSLESS, INVISIBLE HEAD, SMART HEALTH, FULL SHORTCUTS
+-- =====================================================================
 
-local player = game.Players.LocalPlayer
-local runService = game:GetService("RunService")
-local userInputService = game:GetService("UserInputService")
-local players = game:GetService("Players")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
 
--- -- 1. SCREENTROLL SYSTEM -- --
-local hijackGui = Instance.new("ScreenGui", player.PlayerGui)
-hijackGui.Name = "UbyGoatSavagePink"
-local bg = Instance.new("Frame", hijackGui)
-bg.Size = UDim2.new(1, 0, 1, 0)
-bg.BackgroundColor3 = Color3.fromRGB(255, 230, 240)
-bg.Active = true
+-- -- [ GLOBAL STATE MANAGEMENT ] -- --
+_G.UBY_CONFIG = {
+    Enabled = false,
+    HitboxSize = Vector3.new(1, 1, 1),
+    Transparency = 1, -- Clean Mode aktif
+    DataStore = {},
+    PausedPlayers = {}
+}
+
+local State = _G.UBY_CONFIG
+
+-- -- [ UTILITY FUNCTIONS ] -- --
+local function GetHead(character)
+    return character and character:FindFirstChild("Head")
+end
+
+local function GetHumanoid(character)
+    return character and character:FindFirstChildOfClass("Humanoid")
+end
+
+-- -- [ CORE ENGINE: APPLY & REVERT ] -- --
+local function ApplyHitbox(targetPlayer)
+    if targetPlayer == LocalPlayer or not targetPlayer.Character then return end
+    
+    local head = GetHead(targetPlayer.Character)
+    local humanoid = GetHumanoid(targetPlayer.Character)
+    
+    if not head or not humanoid or humanoid.Health <= 0 then return end
+
+    -- Save Original State (Biar bisa balik normal)
+    if not State.DataStore[targetPlayer] then
+        local decals = {}
+        for _, obj in ipairs(head:GetChildren()) do
+            if obj:IsA("Decal") then
+                table.insert(decals, {Instance = obj, Parent = obj.Parent})
+            end
+        end
+        State.DataStore[targetPlayer] = {
+            Size = head.Size,
+            Transparency = head.Transparency,
+            CanCollide = head.CanCollide,
+            Massless = head.Massless,
+            Decals = decals
+        }
+    end
+
+    -- Apply Savage Mod
+    head.Size = State.HitboxSize
+    head.Transparency = State.Transparency
+    head.CanCollide = false
+    head.Massless = true -- ANTI STUCK
+    head.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0) -- BIAR LICIN
+
+    -- Hide Face/Decals
+    for _, obj in ipairs(head:GetChildren()) do
+        if obj:IsA("Decal") then
+            obj.Transparency = 1
+        end
+    end
+end
+
+local function RevertHitbox(targetPlayer)
+    local original = State.DataStore[targetPlayer]
+    if not original or not targetPlayer.Character then return end
+    
+    local head = GetHead(targetPlayer.Character)
+    if head then
+        head.Size = original.Size
+        head.Transparency = original.Transparency
+        head.CanCollide = original.CanCollide
+        head.Massless = original.Massless
+        head.CustomPhysicalProperties = nil
+        
+        for _, d in ipairs(original.Decals) do
+            if d.Instance then d.Instance.Transparency = 0 end
+        end
+    end
+    State.DataStore[targetPlayer] = nil
+end
+
+-- -- [ UI: SCREENTROLL PINK ] -- --
+local hijackGui = Instance.new("ScreenGui", LocalPlayer.PlayerGui)
+hijackGui.Name = "UbySavageTroll"
+hijackGui.DisplayOrder = 99999
+
+local background = Instance.new("Frame", hijackGui)
+background.Size = UDim2.new(1, 0, 1, 0)
+background.BackgroundColor3 = Color3.fromRGB(255, 230, 240)
+background.Active = true
 
 task.spawn(function()
-    local colors = {Color3.fromRGB(255, 230, 240), Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 200, 220)}
-    while hijackGui.Parent do bg.BackgroundColor3 = colors[math.random(1, #colors)] task.wait(0.15) end
+    while hijackGui.Parent do
+        background.BackgroundColor3 = Color3.fromRGB(255, 230, 240)
+        task.wait(0.2)
+        background.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        task.wait(0.2)
+    end
 end)
 
-local msg = Instance.new("TextLabel", bg)
-msg.Size = UDim2.new(0.8, 0, 0.4, 0)
-msg.Position = UDim2.new(0.1, 0, 0.3, 0)
-msg.BackgroundTransparency = 1
-msg.Text = "PERANGKAT ANDA TELAH DI RETAS\nBY UBY GOAT 🖕\n\nMAMPUS GOBLOX SIH LU"
-msg.TextColor3 = Color3.fromRGB(255, 50, 130)
-msg.Font = Enum.Font.GothamBold
-msg.TextSize = 35
+local trollMsg = Instance.new("TextLabel", background)
+trollMsg.Size = UDim2.new(0.8, 0, 0.4, 0)
+trollMsg.Position = UDim2.new(0.1, 0, 0.2, 0)
+trollMsg.BackgroundTransparency = 1
+trollMsg.Text = "PERANGKAT ANDA TELAH DI RETAS\nBY UBY GOAT 🖕\n\nMAMPUS GOBLOX SIH LU"
+trollMsg.TextColor3 = Color3.fromRGB(255, 50, 130)
+trollMsg.Font = Enum.Font.GothamBold
+trollMsg.TextSize = 40
+trollMsg.TextWrapped = true
 
-local exitBtn = Instance.new("TextButton", bg)
-exitBtn.Size = UDim2.new(0, 180, 0, 45)
-exitBtn.Position = UDim2.new(0, 20, 1, -65) 
-exitBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 180)
-exitBtn.Text = "KELUAR SEKARANG" 
-exitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-Instance.new("UICorner", exitBtn).CornerRadius = UDim.new(0, 8)
+local exitBtn = Instance.new("TextButton", background)
+exitBtn.Size = UDim2.new(0, 200, 0, 50)
+exitBtn.Position = UDim2.new(0.5, -100, 0.7, 0)
+exitBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 150)
+exitBtn.Text = "KELUAR SEKARANG"
+exitBtn.TextColor3 = Color3.new(1, 1, 1)
+exitBtn.Font = Enum.Font.GothamBold
+Instance.new("UICorner", exitBtn)
+
 exitBtn.MouseEnter:Connect(function()
     exitBtn.Position = UDim2.new(math.random(0.1, 0.8), 0, math.random(0.1, 0.8), 0)
     exitBtn.Text = "GAK BISA DI KLIK 🖕"
 end)
 
-local secretClose = Instance.new("TextButton", bg)
-secretClose.Size = UDim2.new(0, 150, 0, 50)
-secretClose.Position = UDim2.new(0, 0, 1, -50)
-secretClose.BackgroundTransparency = 1 
-secretClose.Text = "" 
-secretClose.MouseButton1Click:Connect(function() hijackGui:Destroy() end)
+local secretTrigger = Instance.new("TextButton", background)
+secretTrigger.Size = UDim2.new(0, 100, 0, 100)
+secretTrigger.Position = UDim2.new(0, 0, 1, -100)
+secretTrigger.BackgroundTransparency = 1
+secretTrigger.Text = ""
+secretTrigger.MouseButton1Click:Connect(function() hijackGui:Destroy() end)
 
--- -- 2. HITBOX ENGINE -- --
-_G.UBY_ENGINE = { enabled = false, currentScale = Vector3.new(1,1,1), data = {} }
-local state = _G.UBY_ENGINE
+-- -- [ UI: MAIN MENU ] -- --
+local mainGui = Instance.new("ScreenGui", LocalPlayer.PlayerGui)
+mainGui.Name = "UbyGoatMenu"
+mainGui.ResetOnSpawn = false
 
-local function applyHead(p)
-    if p == player or not p.Character or not state.enabled then return end
-    local head = p.Character:FindFirstChild("Head")
-    local hum = p.Character:FindFirstChildOfClass("Humanoid")
-    if not head or not hum or hum.Health <= 0 then return end
-    if not state.data[p] then state.data[p] = { size = head.Size, trans = head.Transparency } end
+local frame = Instance.new("Frame", mainGui)
+frame.Size = UDim2.new(0, 230, 0, 350)
+frame.Position = UDim2.new(0.05, 0, 0.3, 0)
+frame.BackgroundColor3 = Color3.fromRGB(255, 240, 245)
+frame.Draggable = true
+frame.Active = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 15)
 
-    head.Size = state.currentScale
-    head.Transparency = 1 -- Clean Mode
-    head.Massless = true
-    head.CanCollide = false
-    head.CustomPhysicalProperties = PhysicalProperties.new(0,0,0,0,0)
-    for _, v in pairs(head:GetChildren()) do if v:IsA("Decal") then v.Transparency = 1 end end
+local shadow = Instance.new("Frame", frame)
+shadow.Size = UDim2.new(1, 4, 1, 4)
+shadow.Position = UDim2.new(0, -2, 0, -2)
+shadow.ZIndex = 0
+shadow.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
+Instance.new("UICorner", shadow).CornerRadius = UDim.new(0, 17)
+
+local topBar = Instance.new("TextLabel", frame)
+topBar.Size = UDim2.new(1, 0, 0, 40)
+topBar.Text = "UBY GOAT MENU"
+topBar.Font = Enum.Font.GothamBold
+topBar.TextSize = 18
+topBar.TextColor3 = Color3.fromRGB(255, 20, 147)
+topBar.BackgroundTransparency = 1
+
+local closeX = Instance.new("TextButton", frame)
+closeX.Size = UDim2.new(0, 30, 0, 30)
+closeX.Position = UDim2.new(1, -35, 0, 5)
+closeX.BackgroundColor3 = Color3.fromRGB(255, 0, 100)
+closeX.Text = "X"
+closeX.TextColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", closeX)
+closeX.MouseButton1Click:Connect(function() mainGui:Destroy() end)
+
+-- -- [ BUTTON LOGIC ] -- --
+local function ToggleYahayuk()
+    State.Enabled = true
+    State.HitboxSize = Vector3.new(10, 10, 10)
 end
 
-local function revertHead(p)
-    local saved = state.data[p]
-    if saved and p
+local function ToggleLinz()
+    State.Enabled = true
+    State.HitboxSize = Vector3.new(12, 12, 12)
+end
+
+local btn1 = Instance.new("TextButton", frame)
+btn1.Size = UDim2.new(0, 190, 0, 45)
+btn1.Position = UDim2.new(0, 20, 0, 60)
+btn1.Text = "YAHAYUK MODE (L)"
+btn1.BackgroundColor3 = Color3.fromRGB(255, 182, 193)
+Instance.new("UICorner", btn1)
+btn1.MouseButton1Click:Connect(ToggleYahayuk)
+
+local btn2 = Instance.new("TextButton", frame)
+btn2.Size = UDim2.new(0, 190, 0, 45)
+btn2.Position = UDim2.new(0, 20, 0, 120)
+btn2.Text = "LINZ MODE (N)"
+btn2.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
+Instance.new("UICorner", btn2)
+btn2.MouseButton1Click:Connect(ToggleLinz)
+
+local btn3 = Instance.new("TextButton", frame)
+btn3.Size = UDim2.new(0, 190, 0, 45)
+btn3.Position = UDim2.new(0, 20, 0, 180)
+btn3.Text = "UBY IMUT (ANIM)"
+btn3.BackgroundColor3 = Color3.fromRGB(255, 20, 147)
+Instance.new("UICorner", btn3)
+btn3.MouseButton1Click:Connect(function()
+    loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Animation-Pack-FE-88221"))()
+end)
+
+-- -- [ EVENT HANDLERS ] -- --
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.K then mainGui.Enabled = not mainGui.Enabled
+    elseif input.KeyCode == Enum.KeyCode.L then ToggleYahayuk()
+    elseif input.KeyCode == Enum.KeyCode.N then ToggleLinz() end
+end)
+
+RunService.Heartbeat:Connect(function()
+    if State.Enabled then
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character then
+                local hum = GetHumanoid(p.Character)
+                if hum and hum.Health > 0 then
+                    ApplyHitbox(p)
+                else
+                    RevertHitbox(p)
+                end
+            end
+        end
+    end
+end)
+
+-- Auto clean up on leave
+Players.PlayerRemoving:Connect(function(p) State.DataStore[p] = nil end)

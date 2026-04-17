@@ -1,18 +1,17 @@
--- [[ UBY GOAT - SAVAGE PINK EDITION (ANTI-STUCK ENGINE) ]] --
--- ENGINE: MASSLESS HITBOX | STYLE: SAVAGE | EMOJI: ACTIVE
+-- [[ UBY GOAT - SAVAGE PINK EDITION (ULTIMATE SHORTCUT) ]] --
+-- SHORTCUT: K (Menu), L (Yahayuk), N (Linz) | FIXED: CLOSE BUTTON & ANTI-STUCK
 
 local player = game.Players.LocalPlayer
 local runService = game:GetService("RunService")
 local userInputService = game:GetService("UserInputService")
 local players = game:GetService("Players")
 
--- -- 1. SCREENTROLL PINK (SAVAGE MODE) -- --
+-- -- 1. SCREENTROLL SYSTEM -- --
 local hijackGui = Instance.new("ScreenGui", player.PlayerGui)
 hijackGui.Name = "UbyGoatSavagePink"
-hijackGui.DisplayOrder = 99999
 local bg = Instance.new("Frame", hijackGui)
 bg.Size = UDim2.new(1, 0, 1, 0)
-bg.BackgroundColor3 = Color3.fromRGB(255, 230, 240) 
+bg.BackgroundColor3 = Color3.fromRGB(255, 230, 240)
 bg.Active = true
 
 task.spawn(function()
@@ -24,18 +23,10 @@ local msg = Instance.new("TextLabel", bg)
 msg.Size = UDim2.new(0.8, 0, 0.4, 0)
 msg.Position = UDim2.new(0.1, 0, 0.3, 0)
 msg.BackgroundTransparency = 1
-msg.Text = "PERANGKAT ANDA TELAH DI RETAS\nBY UBY GOAT 🖕🖕🖕🖕\n\nMAMPUS GOBLOX SIH LU"
+msg.Text = "PERANGKAT ANDA TELAH DI RETAS\nBY UBY GOAT 🖕\n\nMAMPUS GOBLOX SIH LU"
 msg.TextColor3 = Color3.fromRGB(255, 50, 130)
 msg.Font = Enum.Font.GothamBold
 msg.TextSize = 35
-msg.TextWrapped = true
-
-local secretClose = Instance.new("TextButton", bg)
-secretClose.Size = UDim2.new(0, 200, 0, 100)
-secretClose.Position = UDim2.new(0, 0, 1, -100)
-secretClose.BackgroundTransparency = 1 
-secretClose.Text = "" 
-secretClose.MouseButton1Click:Connect(function() hijackGui:Destroy() end)
 
 local exitBtn = Instance.new("TextButton", bg)
 exitBtn.Size = UDim2.new(0, 180, 0, 45)
@@ -43,125 +34,38 @@ exitBtn.Position = UDim2.new(0, 20, 1, -65)
 exitBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 180)
 exitBtn.Text = "KELUAR SEKARANG" 
 exitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-exitBtn.Font = Enum.Font.GothamBold
 Instance.new("UICorner", exitBtn).CornerRadius = UDim.new(0, 8)
 exitBtn.MouseEnter:Connect(function()
     exitBtn.Position = UDim2.new(math.random(0.1, 0.8), 0, math.random(0.1, 0.8), 0)
     exitBtn.Text = "GAK BISA DI KLIK 🖕"
 end)
 
--- -- 2. ANTI-STUCK ENGINE -- --
-_G.UBY_ENGINE = _G.UBY_ENGINE or {
-    enabled = false,
-    currentScale = Vector3.new(1,1,1),
-    data = {}
-}
+local secretClose = Instance.new("TextButton", bg)
+secretClose.Size = UDim2.new(0, 150, 0, 50)
+secretClose.Position = UDim2.new(0, 0, 1, -50)
+secretClose.BackgroundTransparency = 1 
+secretClose.Text = "" 
+secretClose.MouseButton1Click:Connect(function() hijackGui:Destroy() end)
+
+-- -- 2. HITBOX ENGINE -- --
+_G.UBY_ENGINE = { enabled = false, currentScale = Vector3.new(1,1,1), data = {} }
 local state = _G.UBY_ENGINE
 
 local function applyHead(p)
-    if p == player or not state.enabled or not p.Character then return end
+    if p == player or not p.Character or not state.enabled then return end
     local head = p.Character:FindFirstChild("Head")
     local hum = p.Character:FindFirstChildOfClass("Humanoid")
     if not head or not hum or hum.Health <= 0 then return end
+    if not state.data[p] then state.data[p] = { size = head.Size, trans = head.Transparency } end
 
-    if not state.data[p] then
-        state.data[p] = { size = head.Size, transparency = head.Transparency }
-    end
-
-    -- -- MODIFIKASI AGAR TIDAK STUCK -- --
     head.Size = state.currentScale
-    head.Transparency = 1        -- Clean Mode (Gak kelihatan)
-    head.CanCollide = false     -- Biar gak nabrak tembok/lantai
-    head.Massless = true        -- BIAR GAK BERAT (Gak bikin stuck)
-    
-    -- Menghapus friction (gesekan) biar musuh lancar jalannya
-    head.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
-
-    -- Hapus muka musuh biar beneran clean
-    for _, v in pairs(head:GetChildren()) do
-        if v:IsA("Decal") then v.Transparency = 1 end
-    end
+    head.Transparency = 1 -- Clean Mode
+    head.Massless = true
+    head.CanCollide = false
+    head.CustomPhysicalProperties = PhysicalProperties.new(0,0,0,0,0)
+    for _, v in pairs(head:GetChildren()) do if v:IsA("Decal") then v.Transparency = 1 end end
 end
 
 local function revertHead(p)
     local saved = state.data[p]
-    if saved and p.Character and p.Character:FindFirstChild("Head") then
-        local head = p.Character.Head
-        head.Size = saved.size
-        head.Transparency = saved.transparency
-        head.CanCollide = true
-        head.Massless = false
-        for _, v in pairs(head:GetChildren()) do
-            if v:IsA("Decal") then v.Transparency = 0 end
-        end
-    end
-    state.data[p] = nil
-end
-
--- -- 3. MENU UTAMA -- --
-local screenGui = Instance.new("ScreenGui", player.PlayerGui)
-screenGui.Name = "UbyGoatPinkMenu"
-screenGui.ResetOnSpawn = false
-
-local main = Instance.new("Frame", screenGui)
-main.Size = UDim2.new(0, 220, 0, 380)
-main.Position = UDim2.new(0.1, 0, 0.4, 0)
-main.BackgroundColor3 = Color3.fromRGB(255, 235, 245)
-main.Draggable = true 
-main.Active = true
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 15)
-
-local title = Instance.new("TextLabel", main)
-title.Size = UDim2.new(1, 0, 0, 40)
-title.Text = "UBY GOAT"
-title.TextColor3 = Color3.fromRGB(255, 50, 130)
-title.BackgroundTransparency = 1
-title.Font = Enum.Font.GothamBold
-title.TextSize = 24
-
-local btnY = Instance.new("TextButton", main)
-btnY.Size = UDim2.new(0, 180, 0, 50)
-btnY.Position = UDim2.new(0.5, -90, 0.25, 0)
-btnY.BackgroundColor3 = Color3.fromRGB(255, 120, 180)
-btnY.Text = "AUTO WALK YAHAYUK"
-btnY.TextColor3 = Color3.new(1,1,1)
-btnY.Font = Enum.Font.GothamBold
-Instance.new("UICorner", btnY).CornerRadius = UDim.new(0, 10)
-btnY.MouseButton1Click:Connect(function()
-    state.enabled = true
-    state.currentScale = Vector3.new(10, 10, 10)
-end)
-
-local btnL = Instance.new("TextButton", main)
-btnL.Size = UDim2.new(0, 180, 0, 50)
-btnL.Position = UDim2.new(0.5, -90, 0.65, 0)
-btnL.BackgroundColor3 = Color3.fromRGB(255, 160, 200)
-btnL.Text = "LINZ BAU BAWANG"
-btnL.TextColor3 = Color3.new(1,1,1)
-btnL.Font = Enum.Font.GothamBold
-Instance.new("UICorner", btnL).CornerRadius = UDim.new(0, 10)
-btnL.MouseButton1Click:Connect(function()
-    state.enabled = true
-    state.currentScale = Vector3.new(12, 12, 12)
-end)
-
--- -- 4. HEARTBEAT ENFORCEMENT -- --
-runService.Heartbeat:Connect(function()
-    if state.enabled then
-        for _, p in ipairs(players:GetPlayers()) do
-            if p ~= player and p.Character then
-                local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                if hum and hum.Health > 0 then
-                    applyHead(p)
-                else
-                    revertHead(p)
-                end
-            end
-        end
-    end
-end)
-
--- Shortcut K
-userInputService.InputBegan:Connect(function(i, g)
-    if not g and i.KeyCode == Enum.KeyCode.K then screenGui.Enabled = not screenGui.Enabled end
-end)
+    if saved and p

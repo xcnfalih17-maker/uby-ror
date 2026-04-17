@@ -1,242 +1,297 @@
--- =====================================================================
--- [[ UBY GOAT - SAVAGE PINK EDITION: THE ULTIMATE OVERHAUL ]]
--- =====================================================================
--- DEVELOPER: UBY GOAT
--- ENGINE: LISSPLOIT / PRO-HITBOX V4
--- FEATURES: MASSLESS, INVISIBLE HEAD, SMART HEALTH, FULL SHORTCUTS
--- =====================================================================
+--[[
+    ---------------------------------------------------------------------------------------------------
+    [ PROJECT NAME ] : UBY GOAT ULTIMATE DESTRUCTION SYSTEM
+    [ VERSION ]      : 6.0.0 (PRO OVERHAUL)
+    [ DEVELOPER ]    : UBY GOAT
+    [ COMPATIBILITY ]: XENO / FLUXUS / DELTA (EXECUTORS)
+    [ STATUS ]       : UNDETECTED | MASSLESS | CLEAN MODE
+    ---------------------------------------------------------------------------------------------------
+    
+    [ CONTROL BINDINGS ] :
+    - [K] : INTERFACE TOGGLE (HIDE/SHOW)
+    - [L] : HEAD HITBOX MODE - SIZE 10 (TOGGLE)
+    - [N] : HEAD HITBOX MODE - SIZE 12 (TOGGLE)
+    - [J] : LINZ BODY MODE - SIZE 10 (TOGGLE)
+    
+    [ WARNING ] :
+    DO NOT ATTEMPT TO RE-INDEX GLOBAL VARIABLES WITHOUT AUTHORIZATION.
+    ---------------------------------------------------------------------------------------------------
+]]
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
+-- // [[ INITIALIZING SYSTEM SERVICES ]] // --
+local PlayersService      = game:GetService("Players")
+local RunService          = game:GetService("RunService")
+local UserInputService    = game:GetService("UserInputService")
+local TweenService        = game:GetService("TweenService")
+local CoreGuiService      = game:GetService("CoreGui")
+local HttpService         = game:GetService("HttpService")
 
--- -- [ GLOBAL STATE MANAGEMENT ] -- --
-_G.UBY_CONFIG = {
-    Enabled = false,
-    HitboxSize = Vector3.new(1, 1, 1),
-    Transparency = 1, -- Clean Mode aktif
-    DataStore = {},
-    PausedPlayers = {}
+-- // [[ LOCAL ENVIRONMENT VARIABLES ]] // --
+local ClientPlayer        = PlayersService.LocalPlayer
+local ClientMouse         = ClientPlayer:GetMouse()
+local ClientCamera        = workspace.CurrentCamera
+
+-- // [[ ENGINE CONFIGURATION DATA ]] // --
+_G.UBY_PRO_ENGINE_DATA = {
+    GlobalEnabled      = false,
+    CurrentExecution   = "NONE", -- [HEAD_L, HEAD_N, LINZ_J]
+    TargetComponent    = "Head",
+    ScaleFactor        = Vector3.new(1, 1, 1),
+    TransparencyIndex  = 1,
+    SessionData        = {},
+    MenuVisibility     = true,
+    ScriptID           = math.random(100000, 999999)
 }
 
-local State = _G.UBY_CONFIG
+local EngineState = _G.UBY_PRO_ENGINE_DATA
 
--- -- [ UTILITY FUNCTIONS ] -- --
-local function GetHead(character)
-    return character and character:FindFirstChild("Head")
-end
+-- // [[ CORE ENGINE FUNCTIONS: STATE MANAGEMENT ]] // --
 
-local function GetHumanoid(character)
-    return character and character:FindFirstChildOfClass("Humanoid")
-end
-
--- -- [ CORE ENGINE: APPLY & REVERT ] -- --
-local function ApplyHitbox(targetPlayer)
-    if targetPlayer == LocalPlayer or not targetPlayer.Character then return end
+local function Internal_RevertPlayer(targetPlayerInstance)
+    local SavedState = EngineState.SessionData[targetPlayerInstance]
     
-    local head = GetHead(targetPlayer.Character)
-    local humanoid = GetHumanoid(targetPlayer.Character)
-    
-    if not head or not humanoid or humanoid.Health <= 0 then return end
-
-    -- Save Original State (Biar bisa balik normal)
-    if not State.DataStore[targetPlayer] then
-        local decals = {}
-        for _, obj in ipairs(head:GetChildren()) do
-            if obj:IsA("Decal") then
-                table.insert(decals, {Instance = obj, Parent = obj.Parent})
+    if SavedState and targetPlayerInstance.Character then
+        local TargetPart = targetPlayerInstance.Character:FindFirstChild(SavedState.PartName)
+        
+        if TargetPart then
+            -- Restoring Physical Properties
+            TargetPart.Size = SavedState.OriginalSize
+            TargetPart.Transparency = SavedState.OriginalTransparency
+            TargetPart.CanCollide = SavedState.OriginalCanCollide
+            TargetPart.Massless = SavedState.OriginalMassless
+            TargetPart.CustomPhysicalProperties = nil
+            
+            -- Restoring Decal Visuals (Specific for Head)
+            if SavedState.PartName == "Head" then
+                for _, Object in ipairs(SavedState.OriginalDecals or {}) do
+                    if Object and Object.Instance then
+                        Object.Instance.Transparency = 0
+                    end
+                end
             end
         end
-        State.DataStore[targetPlayer] = {
-            Size = head.Size,
-            Transparency = head.Transparency,
-            CanCollide = head.CanCollide,
-            Massless = head.Massless,
-            Decals = decals
-        }
     end
-
-    -- Apply Savage Mod
-    head.Size = State.HitboxSize
-    head.Transparency = State.Transparency
-    head.CanCollide = false
-    head.Massless = true -- ANTI STUCK
-    head.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0) -- BIAR LICIN
-
-    -- Hide Face/Decals
-    for _, obj in ipairs(head:GetChildren()) do
-        if obj:IsA("Decal") then
-            obj.Transparency = 1
-        end
-    end
+    -- Purge Cache
+    EngineState.SessionData[targetPlayerInstance] = nil
 end
 
-local function RevertHitbox(targetPlayer)
-    local original = State.DataStore[targetPlayer]
-    if not original or not targetPlayer.Character then return end
+local function Internal_ApplySavage(targetPlayerInstance)
+    if targetPlayerInstance == ClientPlayer then return end
+    if not targetPlayerInstance.Character then return end
+    if not EngineState.GlobalEnabled then return end
     
-    local head = GetHead(targetPlayer.Character)
-    if head then
-        head.Size = original.Size
-        head.Transparency = original.Transparency
-        head.CanCollide = original.CanCollide
-        head.Massless = original.Massless
-        head.CustomPhysicalProperties = nil
+    local CharacterModel = targetPlayerInstance.Character
+    local TargetPart = CharacterModel:FindFirstChild(EngineState.TargetComponent)
+    local HumanoidComponent = CharacterModel:FindFirstChildOfClass("Humanoid")
+    
+    if TargetPart and HumanoidComponent and HumanoidComponent.Health > 0 then
+        -- Backup Original Attributes if entry doesn't exist
+        if not EngineState.SessionData[targetPlayerInstance] then
+            local DecalReferenceList = {}
+            if EngineState.TargetComponent == "Head" then
+                for _, Child in ipairs(TargetPart:GetChildren()) do
+                    if Child:IsA("Decal") then
+                        table.insert(DecalReferenceList, {Instance = Child})
+                    end
+                end
+            end
+            
+            EngineState.SessionData[targetPlayerInstance] = {
+                PartName = EngineState.TargetComponent,
+                OriginalSize = TargetPart.Size,
+                OriginalTransparency = TargetPart.Transparency,
+                OriginalCanCollide = TargetPart.CanCollide,
+                OriginalMassless = TargetPart.Massless,
+                OriginalDecals = DecalReferenceList
+            }
+        end
         
-        for _, d in ipairs(original.Decals) do
-            if d.Instance then d.Instance.Transparency = 0 end
+        -- Executing Modifications (Massless Hitbox Engine)
+        TargetPart.Size = EngineState.ScaleFactor
+        TargetPart.Transparency = EngineState.TransparencyIndex
+        TargetPart.CanCollide = false
+        TargetPart.Massless = true
+        TargetPart.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
+        
+        -- Clean Visual Implementation
+        if EngineState.TargetComponent == "Head" then
+            for _, ChildObject in ipairs(TargetPart:GetChildren()) do
+                if ChildObject:IsA("Decal") then
+                    ChildObject.Transparency = 1
+                end
+            end
         end
     end
-    State.DataStore[targetPlayer] = nil
 end
 
--- -- [ UI: SCREENTROLL PINK ] -- --
-local hijackGui = Instance.new("ScreenGui", LocalPlayer.PlayerGui)
-hijackGui.Name = "UbySavageTroll"
-hijackGui.DisplayOrder = 99999
+-- // [[ SYSTEM CONTROLLER: MODE SWITCHING ]] // --
 
-local background = Instance.new("Frame", hijackGui)
-background.Size = UDim2.new(1, 0, 1, 0)
-background.BackgroundColor3 = Color3.fromRGB(255, 230, 240)
-background.Active = true
+local function Global_SwitchMode(ModeIdentifier, PartIdentifier, ScaleValue)
+    -- Visual Feedback for Console
+    print("[UBY GOAT LOG] : Attempting Switch to " .. ModeIdentifier)
+    
+    if EngineState.CurrentExecution == ModeIdentifier then
+        -- DEACTIVATION SEQUENCE
+        EngineState.GlobalEnabled = false
+        EngineState.CurrentExecution = "NONE"
+        for _, CurrentTarget in ipairs(PlayersService:GetPlayers()) do
+            Internal_RevertPlayer(CurrentTarget)
+        end
+    else
+        -- RE-INITIALIZATION SEQUENCE
+        for _, CurrentTarget in ipairs(PlayersService:GetPlayers()) do
+            Internal_RevertPlayer(CurrentTarget)
+        end
+        EngineState.GlobalEnabled = true
+        EngineState.CurrentExecution = ModeIdentifier
+        EngineState.TargetComponent = PartIdentifier
+        EngineState.ScaleFactor = Vector3.new(ScaleValue, ScaleValue, ScaleValue)
+    end
+end
 
-task.spawn(function()
-    while hijackGui.Parent do
-        background.BackgroundColor3 = Color3.fromRGB(255, 230, 240)
-        task.wait(0.2)
-        background.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        task.wait(0.2)
+-- // [[ USER INTERFACE CONSTRUCTION: UBY SAVAGE V6 ]] // --
+
+local function UI_ConstructMainFrame()
+    local UBY_SCREEN_GUI = Instance.new("ScreenGui")
+    UBY_SCREEN_GUI.Name = "UBY_GOAT_V6_PRO_SYSTEM"
+    UBY_SCREEN_GUI.Parent = ClientPlayer.PlayerGui
+    UBY_SCREEN_GUI.ResetOnSpawn = false
+    
+    local MAIN_CONTAINER = Instance.new("Frame")
+    MAIN_CONTAINER.Name = "MainModuleFrame"
+    MAIN_CONTAINER.Parent = UBY_SCREEN_GUI
+    MAIN_CONTAINER.BackgroundColor3 = Color3.fromRGB(255, 235, 245)
+    MAIN_CONTAINER.Position = UDim2.new(0.05, 0, 0.35, 0)
+    MAIN_CONTAINER.Size = UDim2.new(0, 250, 0, 450)
+    MAIN_CONTAINER.Active = true
+    MAIN_CONTAINER.Draggable = true
+    
+    local CORNER_RADIUS = Instance.new("UICorner")
+    CORNER_RADIUS.CornerRadius = UDim.new(0, 15)
+    CORNER_RADIUS.Parent = MAIN_CONTAINER
+    
+    local HEADER_TITLE = Instance.new("TextLabel")
+    HEADER_TITLE.Name = "HeaderTitleLabel"
+    HEADER_TITLE.Parent = MAIN_CONTAINER
+    HEADER_TITLE.Size = UDim2.new(1, 0, 0, 50)
+    HEADER_TITLE.Text = "UBY GOAT ULTIMATE V6"
+    HEADER_TITLE.Font = Enum.Font.GothamBold
+    HEADER_TITLE.TextColor3 = Color3.fromRGB(255, 60, 140)
+    HEADER_TITLE.TextSize = 20
+    HEADER_TITLE.BackgroundTransparency = 1
+    
+    local CLOSE_BUTTON = Instance.new("TextButton")
+    CLOSE_BUTTON.Name = "TerminateButton"
+    CLOSE_BUTTON.Parent = MAIN_CONTAINER
+    CLOSE_BUTTON.Size = UDim2.new(0, 35, 0, 35)
+    CLOSE_BUTTON.Position = UDim2.new(1, -40, 0, 10)
+    CLOSE_BUTTON.Text = "X"
+    CLOSE_BUTTON.BackgroundColor3 = Color3.fromRGB(255, 20, 100)
+    CLOSE_BUTTON.TextColor3 = Color3.new(1, 1, 1)
+    CLOSE_BUTTON.Font = Enum.Font.GothamBold
+    
+    local BTN_CORNER = Instance.new("UICorner")
+    BTN_CORNER.CornerRadius = UDim.new(0, 10)
+    BTN_CORNER.Parent = CLOSE_BUTTON
+    CLOSE_BUTTON.MouseButton1Click:Connect(function() UBY_SCREEN_GUI:Destroy() end)
+
+    -- INTERNAL UI BUILDER HELPER
+    local function CreateModuleButton(ButtonName, LabelText, VerticalPosition, BaseColor, FunctionCallback)
+        local MODULE_BTN = Instance.new("TextButton")
+        MODULE_BTN.Name = ButtonName
+        MODULE_BTN.Parent = MAIN_CONTAINER
+        MODULE_BTN.Size = UDim2.new(0, 210, 0, 55)
+        MODULE_BTN.Position = UDim2.new(0, 20, 0, VerticalPosition)
+        MODULE_BTN.Text = LabelText
+        MODULE_BTN.BackgroundColor3 = BaseColor
+        MODULE_BTN.TextColor3 = Color3.new(1, 1, 1)
+        MODULE_BTN.Font = Enum.Font.GothamBold
+        MODULE_BTN.TextSize = 14
+        
+        local M_CORNER = Instance.new("UICorner")
+        M_CORNER.CornerRadius = UDim.new(0, 12)
+        M_CORNER.Parent = MODULE_BTN
+        
+        MODULE_BTN.MouseButton1Click:Connect(FunctionCallback)
+    end
+
+    -- Rendering Buttons
+    CreateModuleButton("HeadL_Btn", "HEAD MODE (L) - SIZE 10", 75, Color3.fromRGB(255, 150, 190), function() Global_SwitchMode("HEAD_L", "Head", 10) end)
+    CreateModuleButton("HeadN_Btn", "HEAD MODE (N) - SIZE 12", 145, Color3.fromRGB(255, 100, 160), function() Global_SwitchMode("HEAD_N", "Head", 12) end)
+    CreateModuleButton("LinzJ_Btn", "LINZ MODE (J) - SIZE 10", 215, Color3.fromRGB(255, 50, 130), function() Global_SwitchMode("LINZ_J", "HumanoidRootPart", 10) end)
+    CreateModuleButton("Anim_Btn", "UBY IMUT (ANIMATIONS)", 285, Color3.fromRGB(200, 40, 110), function() loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Animation-Pack-FE-88221"))() end)
+
+    return UBY_SCREEN_GUI
+end
+
+local MainSystemUI = UI_ConstructMainFrame()
+
+-- // [[ SCREENTROLL INITIALIZATION ]] // --
+
+local function Initialize_BackgroundTroll()
+    local TrollContainer = Instance.new("ScreenGui", ClientPlayer.PlayerGui)
+    TrollContainer.Name = "UbySavage_SecurityTroll"
+    
+    local BackgroundFrame = Instance.new("Frame", TrollContainer)
+    BackgroundFrame.Size = UDim2.new(1, 0, 1, 0)
+    BackgroundFrame.BackgroundColor3 = Color3.fromRGB(255, 230, 240)
+    
+    task.spawn(function()
+        while TrollContainer.Parent do
+            BackgroundFrame.Visible = not BackgroundFrame.Visible
+            task.wait(0.2)
+        end
+    end)
+    
+    local SecretTerminate = Instance.new("TextButton", BackgroundFrame)
+    SecretTerminate.Size = UDim2.new(0, 150, 0, 70)
+    SecretTerminate.Position = UDim2.new(0, 0, 1, -70)
+    SecretTerminate.Transparency = 1
+    SecretTerminate.Text = ""
+    SecretTerminate.MouseButton1Click:Connect(function() TrollContainer:Destroy() end)
+end
+
+Initialize_BackgroundTroll()
+
+-- // [[ INPUT HANDLING: KEYBOARD INTERRUPTS ]] // --
+
+UserInputService.InputBegan:Connect(function(InputObject, GameProcessed)
+    if GameProcessed then return end
+    
+    local KeyCode = InputObject.KeyCode
+    
+    if KeyCode == Enum.KeyCode.K then
+        MainSystemUI.Enabled = not MainSystemUI.Enabled
+    elseif KeyCode == Enum.KeyCode.L then
+        Global_SwitchMode("HEAD_L", "Head", 10)
+    elseif KeyCode == Enum.KeyCode.N then
+        Global_SwitchMode("HEAD_N", "Head", 12)
+    elseif KeyCode == Enum.KeyCode.J then
+        Global_SwitchMode("LINZ_J", "HumanoidRootPart", 10)
     end
 end)
 
-local trollMsg = Instance.new("TextLabel", background)
-trollMsg.Size = UDim2.new(0.8, 0, 0.4, 0)
-trollMsg.Position = UDim2.new(0.1, 0, 0.2, 0)
-trollMsg.BackgroundTransparency = 1
-trollMsg.Text = "PERANGKAT ANDA TELAH DI RETAS\nBY UBY GOAT 🖕\n\nMAMPUS GOBLOX SIH LU"
-trollMsg.TextColor3 = Color3.fromRGB(255, 50, 130)
-trollMsg.Font = Enum.Font.GothamBold
-trollMsg.TextSize = 40
-trollMsg.TextWrapped = true
-
-local exitBtn = Instance.new("TextButton", background)
-exitBtn.Size = UDim2.new(0, 200, 0, 50)
-exitBtn.Position = UDim2.new(0.5, -100, 0.7, 0)
-exitBtn.BackgroundColor3 = Color3.fromRGB(255, 80, 150)
-exitBtn.Text = "KELUAR SEKARANG"
-exitBtn.TextColor3 = Color3.new(1, 1, 1)
-exitBtn.Font = Enum.Font.GothamBold
-Instance.new("UICorner", exitBtn)
-
-exitBtn.MouseEnter:Connect(function()
-    exitBtn.Position = UDim2.new(math.random(0.1, 0.8), 0, math.random(0.1, 0.8), 0)
-    exitBtn.Text = "GAK BISA DI KLIK 🖕"
-end)
-
-local secretTrigger = Instance.new("TextButton", background)
-secretTrigger.Size = UDim2.new(0, 100, 0, 100)
-secretTrigger.Position = UDim2.new(0, 0, 1, -100)
-secretTrigger.BackgroundTransparency = 1
-secretTrigger.Text = ""
-secretTrigger.MouseButton1Click:Connect(function() hijackGui:Destroy() end)
-
--- -- [ UI: MAIN MENU ] -- --
-local mainGui = Instance.new("ScreenGui", LocalPlayer.PlayerGui)
-mainGui.Name = "UbyGoatMenu"
-mainGui.ResetOnSpawn = false
-
-local frame = Instance.new("Frame", mainGui)
-frame.Size = UDim2.new(0, 230, 0, 350)
-frame.Position = UDim2.new(0.05, 0, 0.3, 0)
-frame.BackgroundColor3 = Color3.fromRGB(255, 240, 245)
-frame.Draggable = true
-frame.Active = true
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 15)
-
-local shadow = Instance.new("Frame", frame)
-shadow.Size = UDim2.new(1, 4, 1, 4)
-shadow.Position = UDim2.new(0, -2, 0, -2)
-shadow.ZIndex = 0
-shadow.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
-Instance.new("UICorner", shadow).CornerRadius = UDim.new(0, 17)
-
-local topBar = Instance.new("TextLabel", frame)
-topBar.Size = UDim2.new(1, 0, 0, 40)
-topBar.Text = "UBY GOAT MENU"
-topBar.Font = Enum.Font.GothamBold
-topBar.TextSize = 18
-topBar.TextColor3 = Color3.fromRGB(255, 20, 147)
-topBar.BackgroundTransparency = 1
-
-local closeX = Instance.new("TextButton", frame)
-closeX.Size = UDim2.new(0, 30, 0, 30)
-closeX.Position = UDim2.new(1, -35, 0, 5)
-closeX.BackgroundColor3 = Color3.fromRGB(255, 0, 100)
-closeX.Text = "X"
-closeX.TextColor3 = Color3.new(1, 1, 1)
-Instance.new("UICorner", closeX)
-closeX.MouseButton1Click:Connect(function() mainGui:Destroy() end)
-
--- -- [ BUTTON LOGIC ] -- --
-local function ToggleYahayuk()
-    State.Enabled = true
-    State.HitboxSize = Vector3.new(10, 10, 10)
-end
-
-local function ToggleLinz()
-    State.Enabled = true
-    State.HitboxSize = Vector3.new(12, 12, 12)
-end
-
-local btn1 = Instance.new("TextButton", frame)
-btn1.Size = UDim2.new(0, 190, 0, 45)
-btn1.Position = UDim2.new(0, 20, 0, 60)
-btn1.Text = "YAHAYUK MODE (L)"
-btn1.BackgroundColor3 = Color3.fromRGB(255, 182, 193)
-Instance.new("UICorner", btn1)
-btn1.MouseButton1Click:Connect(ToggleYahayuk)
-
-local btn2 = Instance.new("TextButton", frame)
-btn2.Size = UDim2.new(0, 190, 0, 45)
-btn2.Position = UDim2.new(0, 20, 0, 120)
-btn2.Text = "LINZ MODE (N)"
-btn2.BackgroundColor3 = Color3.fromRGB(255, 105, 180)
-Instance.new("UICorner", btn2)
-btn2.MouseButton1Click:Connect(ToggleLinz)
-
-local btn3 = Instance.new("TextButton", frame)
-btn3.Size = UDim2.new(0, 190, 0, 45)
-btn3.Position = UDim2.new(0, 20, 0, 180)
-btn3.Text = "UBY IMUT (ANIM)"
-btn3.BackgroundColor3 = Color3.fromRGB(255, 20, 147)
-Instance.new("UICorner", btn3)
-btn3.MouseButton1Click:Connect(function()
-    loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Animation-Pack-FE-88221"))()
-end)
-
--- -- [ EVENT HANDLERS ] -- --
-UserInputService.InputBegan:Connect(function(input, processed)
-    if processed then return end
-    if input.KeyCode == Enum.KeyCode.K then mainGui.Enabled = not mainGui.Enabled
-    elseif input.KeyCode == Enum.KeyCode.L then ToggleYahayuk()
-    elseif input.KeyCode == Enum.KeyCode.N then ToggleLinz() end
-end)
+-- // [[ SYSTEM LOOP: HEARTBEAT SYNCHRONIZATION ]] // --
 
 RunService.Heartbeat:Connect(function()
-    if State.Enabled then
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character then
-                local hum = GetHumanoid(p.Character)
-                if hum and hum.Health > 0 then
-                    ApplyHitbox(p)
+    if EngineState.GlobalEnabled then
+        local ActivePlayers = PlayersService:GetPlayers()
+        for Index = 1, #ActivePlayers do
+            local Target = ActivePlayers[Index]
+            if Target.Character then
+                local Humanoid = Target.Character:FindFirstChildOfClass("Humanoid")
+                if Humanoid and Humanoid.Health > 0 then
+                    Internal_ApplySavage(Target)
                 else
-                    RevertHitbox(p)
+                    Internal_RevertPlayer(Target)
                 end
             end
         end
     end
 end)
 
--- Auto clean up on leave
-Players.PlayerRemoving:Connect(function(p) State.DataStore[p] = nil end)
+-- // [[ SYSTEM NOTIFICATION ]] // --
+print("======================================================")
+print("[UBY GOAT PRO] : ENGINE LOADED AT VERSION 6.0")
+print("[UBY GOAT PRO] : SYSTEM ID " .. EngineState.ScriptID)
+print("======================================================")

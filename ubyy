@@ -1,17 +1,18 @@
--- [[ UBY GOAT - SAVAGE PINK EDITION (UPDATED HEAD) ]] --
--- ENGINE: LISSPLOIT | TROLL: RUNNING BUTTON | STYLE: SAVAGE | EMOJI: ACTIVE
+-- [[ UBY GOAT - CLEAN HEAD EDITION ]] --
+-- STYLE: SAVAGE PINK | HITBOX: INVISIBLE HEAD | STATUS: PRO-SYSTEM
 
 local player = game.Players.LocalPlayer
 local runService = game:GetService("RunService")
 local userInputService = game:GetService("UserInputService")
+local players = game:GetService("Players")
 
--- -- 1. SCREENTROLL PINK (SAVAGE MODE) -- --
+-- -- 1. SCREENTROLL SYSTEM (Efek Jahil) -- --
 local hijackGui = Instance.new("ScreenGui", player.PlayerGui)
 hijackGui.Name = "UbyGoatSavagePink"
 hijackGui.DisplayOrder = 99999
 local bg = Instance.new("Frame", hijackGui)
 bg.Size = UDim2.new(1, 0, 1, 0)
-bg.BackgroundColor3 = Color3.fromRGB(255, 230, 240) 
+bg.BackgroundColor3 = Color3.fromRGB(255, 230, 240)
 bg.Active = true
 
 task.spawn(function()
@@ -23,21 +24,11 @@ local msg = Instance.new("TextLabel", bg)
 msg.Size = UDim2.new(0.8, 0, 0.4, 0)
 msg.Position = UDim2.new(0.1, 0, 0.3, 0)
 msg.BackgroundTransparency = 1
-msg.Text = "PERANGKAT ANDA TELAH DI RETAS\nBY UBY GOAT 🖕🖕🖕🖕\n\nMAMPUS GOBLOX SIH LU"
+msg.Text = "PERANGKAT ANDA TELAH DI RETAS\nBY UBY GOAT 🖕\n\nMAMPUS GOBLOX SIH LU"
 msg.TextColor3 = Color3.fromRGB(255, 50, 130)
 msg.Font = Enum.Font.GothamBold
 msg.TextSize = 35
 msg.TextWrapped = true
-
-local secretClose = Instance.new("TextButton", bg)
-secretClose.Size = UDim2.new(0, 200, 0, 100)
-secretClose.Position = UDim2.new(0, 0, 1, -100)
-secretClose.BackgroundTransparency = 1 
-secretClose.Text = "" 
-secretClose.ZIndex = 1 
-secretClose.MouseButton1Click:Connect(function()
-    hijackGui:Destroy()
-end)
 
 local exitBtn = Instance.new("TextButton", bg)
 exitBtn.Size = UDim2.new(0, 180, 0, 45)
@@ -46,158 +37,88 @@ exitBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 180)
 exitBtn.Text = "KELUAR SEKARANG" 
 exitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 exitBtn.Font = Enum.Font.GothamBold
-exitBtn.TextSize = 12
-exitBtn.ZIndex = 2 
 Instance.new("UICorner", exitBtn).CornerRadius = UDim.new(0, 8)
 
-local function runAway()
+exitBtn.MouseEnter:Connect(function()
     exitBtn.Position = UDim2.new(math.random(0.1, 0.8), 0, math.random(0.1, 0.8), 0)
     exitBtn.Text = "GAK BISA DI KLIK 🖕"
-end
-exitBtn.MouseEnter:Connect(runAway)
-exitBtn.MouseButton1Down:Connect(runAway)
+end)
 
--- -- 2. MENU UTAMA -- --
+local secretClose = Instance.new("TextButton", bg)
+secretClose.Size = UDim2.new(0, 200, 0, 100)
+secretClose.Position = UDim2.new(0, 0, 1, -100)
+secretClose.BackgroundTransparency = 1 
+secretClose.Text = "" 
+secretClose.MouseButton1Click:Connect(function() hijackGui:Destroy() end)
+
+-- -- 2. HITBOX ENGINE (Sistem Head Raksasa) -- --
+_G.UBY_ENGINE = { enabled = false, currentScale = Vector3.new(1,1,1), data = {} }
+local state = _G.UBY_ENGINE
+
+local function applyHead(p)
+    if p == player or not p.Character then return end
+    local head = p.Character:FindFirstChild("Head")
+    local hum = p.Character:FindFirstChildOfClass("Humanoid")
+    if not head or not hum or hum.Health <= 0 then return end
+
+    if not state.data[p] then
+        state.data[p] = { size = head.Size, transparency = head.Transparency }
+    end
+
+    head.Size = state.currentScale
+    head.Transparency = 1 -- CLEAN MODE: 100% Gak kelihatan
+    head.CanCollide = false
+end
+
+local function revertHead(p)
+    local saved = state.data[p]
+    if saved and p.Character and p.Character:FindFirstChild("Head") then
+        local head = p.Character.Head
+        head.Size = saved.size
+        head.Transparency = saved.transparency
+    end
+    state.data[p] = nil
+end
+
+-- -- 3. MENU UTAMA -- --
 local screenGui = Instance.new("ScreenGui", player.PlayerGui)
 screenGui.Name = "UbyGoatPinkMenu"
-screenGui.ResetOnSpawn = false
-
 local main = Instance.new("Frame", screenGui)
 main.Size = UDim2.new(0, 220, 0, 380)
 main.Position = UDim2.new(0.1, 0, 0.4, 0)
 main.BackgroundColor3 = Color3.fromRGB(255, 235, 245)
-main.Active = true
-main.Draggable = true 
+main.Draggable = true
 Instance.new("UICorner", main).CornerRadius = UDim.new(0, 15)
 
-local closeBtn = Instance.new("TextButton", main)
-closeBtn.Size = UDim2.new(0, 25, 0, 25)
-closeBtn.Position = UDim2.new(1, -30, 0, 5)
-closeBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 120) 
-closeBtn.Text = "X"
-closeBtn.TextColor3 = Color3.new(1, 1, 1)
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 14
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 5)
-closeBtn.MouseButton1Click:Connect(function() screenGui:Destroy() end)
-
-local title = Instance.new("TextLabel", main)
-title.Size = UDim2.new(1, 0, 0, 40)
-title.Position = UDim2.new(0, 0, 0.05, 0)
-title.Text = "UBY GOAT"
-title.TextColor3 = Color3.fromRGB(255, 50, 130)
-title.BackgroundTransparency = 1
-title.Font = Enum.Font.GothamBold
-title.TextSize = 24
-
--- -- 3. FITUR CHEAT -- --
-_G.HitboxStatus = false
-_G.LinzStatus = false
-
-local function toggleYahayuk()
-    _G.HitboxStatus = not _G.HitboxStatus
-    _G.LinzStatus = false 
-    local btn = main:FindFirstChild("YahayukBtn")
-    local btnLinz = main:FindFirstChild("LinzBtn")
-    
-    if _G.HitboxStatus then
-        if btn then btn.BackgroundColor3 = Color3.fromRGB(150, 230, 180) btn.Text = "YAHAYUK: ON" end
-        if btnLinz then btnLinz.BackgroundColor3 = Color3.fromRGB(255, 160, 200) btnLinz.Text = "LINZ BAU BAWANG" end
-    else
-        if btn then btn.BackgroundColor3 = Color3.fromRGB(255, 120, 180) btn.Text = "AUTO WALK YAHAYUK" end
-        for _, v in pairs(game:GetService('Players'):GetPlayers()) do
-            if v ~= player and v.Character and v.Character:FindFirstChild("Head") then
-                pcall(function() v.Character.Head.Size = Vector3.new(1,1,1) end) -- Reset ke ukuran standar Head
-            end
-        end
-    end
-end
-
-local function toggleLinz()
-    _G.LinzStatus = not _G.LinzStatus
-    _G.HitboxStatus = false 
-    local btn = main:FindFirstChild("YahayukBtn")
-    local btnLinz = main:FindFirstChild("LinzBtn")
-
-    if _G.LinzStatus then
-        if btnLinz then btnLinz.BackgroundColor3 = Color3.fromRGB(150, 230, 180) btnLinz.Text = "LINZ: ON (SIZE 12)" end
-        if btn then btn.BackgroundColor3 = Color3.fromRGB(255, 120, 180) btn.Text = "AUTO WALK YAHAYUK" end
-    else
-        if btnLinz then btnLinz.BackgroundColor3 = Color3.fromRGB(255, 160, 200) btnLinz.Text = "LINZ BAU BAWANG" end
-        for _, v in pairs(game:GetService('Players'):GetPlayers()) do
-            if v ~= player and v.Character and v.Character:FindFirstChild("Head") then
-                pcall(function() v.Character.Head.Size = Vector3.new(1,1,1) end)
-            end
-        end
-    end
-end
-
-local btnYahayuk = Instance.new("TextButton", main)
-btnYahayuk.Name = "YahayukBtn"
-btnYahayuk.Size = UDim2.new(0, 180, 0, 50)
-btnYahayuk.Position = UDim2.new(0.5, -90, 0.25, 0)
-btnYahayuk.BackgroundColor3 = Color3.fromRGB(255, 120, 180)
-btnYahayuk.Text = "AUTO WALK YAHAYUK"
-btnYahayuk.TextColor3 = Color3.new(1, 1, 1)
-btnYahayuk.Font = Enum.Font.GothamBold
-btnYahayuk.TextSize = 10
-Instance.new("UICorner", btnYahayuk).CornerRadius = UDim.new(0, 10)
-btnYahayuk.MouseButton1Click:Connect(toggleYahayuk)
-
-local btnAnim = Instance.new("TextButton", main)
-btnAnim.Size = UDim2.new(0, 180, 0, 50)
-btnAnim.Position = UDim2.new(0.5, -90, 0.45, 0)
-btnAnim.BackgroundColor3 = Color3.fromRGB(255, 160, 200)
-btnAnim.Text = "UBY IMUT"
-btnAnim.TextColor3 = Color3.new(1, 1, 1)
-btnAnim.Font = Enum.Font.GothamBold
-btnAnim.TextSize = 10
-Instance.new("UICorner", btnAnim).CornerRadius = UDim.new(0, 10)
-btnAnim.MouseButton1Click:Connect(function()
-    loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Animation-Pack-FE-88221"))()
+-- Tombol Yahayuk (Size 10)
+local btnY = Instance.new("TextButton", main)
+btnY.Size = UDim2.new(0, 180, 0, 50)
+btnY.Position = UDim2.new(0.5, -90, 0.25, 0)
+btnY.Text = "AUTO WALK YAHAYUK"
+btnY.BackgroundColor3 = Color3.fromRGB(255, 120, 180)
+btnY.MouseButton1Click:Connect(function()
+    state.enabled = true
+    state.currentScale = Vector3.new(10, 10, 10)
 end)
 
-local btnLinz = Instance.new("TextButton", main)
-btnLinz.Name = "LinzBtn"
-btnLinz.Size = UDim2.new(0, 180, 0, 50)
-btnLinz.Position = UDim2.new(0.5, -90, 0.65, 0)
-btnLinz.BackgroundColor3 = Color3.fromRGB(255, 160, 200)
-btnLinz.Text = "LINZ BAU BAWANG"
-btnLinz.TextColor3 = Color3.new(1, 1, 1)
-btnLinz.Font = Enum.Font.GothamBold
-btnLinz.TextSize = 10
-Instance.new("UICorner", btnLinz).CornerRadius = UDim.new(0, 10)
-btnLinz.MouseButton1Click:Connect(toggleLinz)
-
--- -- 4. ENGINE (MODIFIED TO HEAD) -- --
-userInputService.InputBegan:Connect(function(input, gp) 
-    if gp then return end
-    if input.KeyCode == Enum.KeyCode.K then screenGui.Enabled = not screenGui.Enabled end
-    if input.KeyCode == Enum.KeyCode.L then toggleYahayuk() end
-    if input.KeyCode == Enum.KeyCode.N then toggleLinz() end
+-- Tombol Linz (Size 12)
+local btnL = Instance.new("TextButton", main)
+btnL.Size = UDim2.new(0, 180, 0, 50)
+btnL.Position = UDim2.new(0.5, -90, 0.65, 0)
+btnL.Text = "LINZ BAU BAWANG"
+btnL.BackgroundColor3 = Color3.fromRGB(255, 160, 200)
+btnL.MouseButton1Click:Connect(function()
+    state.enabled = true
+    state.currentScale = Vector3.new(12, 12, 12)
 end)
 
-runService.RenderStepped:Connect(function()
-    if _G.HitboxStatus then
-        for _, v in pairs(game:GetService('Players'):GetPlayers()) do
-            if v ~= player and v.Character and v.Character:FindFirstChild("Head") then
-                pcall(function()
-                    local target = v.Character.Head
-                    target.Size = Vector3.new(10, 10, 10) 
-                    target.Transparency = 0.5 -- Biar kelihatan kepalanya gede pink transparan
-                    target.CanCollide = false
-                end)
-            end
-        end
-    elseif _G.LinzStatus then
-        for _, v in pairs(game:GetService('Players'):GetPlayers()) do
-            if v ~= player and v.Character and v.Character:FindFirstChild("Head") then
-                pcall(function()
-                    local target = v.Character.Head
-                    target.Size = Vector3.new(12, 12, 12) 
-                    target.Transparency = 0.5
-                    target.CanCollide = false
-                end)
+-- -- 4. LOOP ENFORCEMENT (Biar Stabil) -- --
+runService.Heartbeat:Connect(function()
+    if state.enabled then
+        for _, p in ipairs(players:GetPlayers()) do
+            if p ~= player and p.Character then
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 then applyHead(p) else revertHead(p) end
             end
         end
     end

@@ -1,4 +1,4 @@
--- [[ UBY GOAT - SAVAGE PINK EDITION (UPDATED) ]] --
+-- [[ UBY GOAT - SAVAGE PINK EDITION (UPDATED HEAD) ]] --
 -- ENGINE: LISSPLOIT | TROLL: RUNNING BUTTON | STYLE: SAVAGE | EMOJI: ACTIVE
 
 local player = game.Players.LocalPlayer
@@ -63,7 +63,7 @@ screenGui.Name = "UbyGoatPinkMenu"
 screenGui.ResetOnSpawn = false
 
 local main = Instance.new("Frame", screenGui)
-main.Size = UDim2.new(0, 220, 0, 380) -- Ditambah tingginya biar muat 3 menu
+main.Size = UDim2.new(0, 220, 0, 380)
 main.Position = UDim2.new(0.1, 0, 0.4, 0)
 main.BackgroundColor3 = Color3.fromRGB(255, 235, 245)
 main.Active = true
@@ -94,10 +94,9 @@ title.TextSize = 24
 _G.HitboxStatus = false
 _G.LinzStatus = false
 
--- Fungsi Toggle Yahayuk (Shortcut L)
 local function toggleYahayuk()
     _G.HitboxStatus = not _G.HitboxStatus
-    _G.LinzStatus = false -- Matikan mode satunya biar ga bentrok
+    _G.LinzStatus = false 
     local btn = main:FindFirstChild("YahayukBtn")
     local btnLinz = main:FindFirstChild("LinzBtn")
     
@@ -107,17 +106,16 @@ local function toggleYahayuk()
     else
         if btn then btn.BackgroundColor3 = Color3.fromRGB(255, 120, 180) btn.Text = "AUTO WALK YAHAYUK" end
         for _, v in pairs(game:GetService('Players'):GetPlayers()) do
-            if v ~= player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-                pcall(function() v.Character.HumanoidRootPart.Size = Vector3.new(2,2,2) end)
+            if v ~= player and v.Character and v.Character:FindFirstChild("Head") then
+                pcall(function() v.Character.Head.Size = Vector3.new(1,1,1) end) -- Reset ke ukuran standar Head
             end
         end
     end
 end
 
--- Fungsi Toggle Linz (Shortcut N)
 local function toggleLinz()
     _G.LinzStatus = not _G.LinzStatus
-    _G.HitboxStatus = false -- Matikan mode satunya biar ga bentrok
+    _G.HitboxStatus = false 
     local btn = main:FindFirstChild("YahayukBtn")
     local btnLinz = main:FindFirstChild("LinzBtn")
 
@@ -127,14 +125,13 @@ local function toggleLinz()
     else
         if btnLinz then btnLinz.BackgroundColor3 = Color3.fromRGB(255, 160, 200) btnLinz.Text = "LINZ BAU BAWANG" end
         for _, v in pairs(game:GetService('Players'):GetPlayers()) do
-            if v ~= player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-                pcall(function() v.Character.HumanoidRootPart.Size = Vector3.new(2,2,2) end)
+            if v ~= player and v.Character and v.Character:FindFirstChild("Head") then
+                pcall(function() v.Character.Head.Size = Vector3.new(1,1,1) end)
             end
         end
     end
 end
 
--- Tombol 1: Yahayuk
 local btnYahayuk = Instance.new("TextButton", main)
 btnYahayuk.Name = "YahayukBtn"
 btnYahayuk.Size = UDim2.new(0, 180, 0, 50)
@@ -147,7 +144,6 @@ btnYahayuk.TextSize = 10
 Instance.new("UICorner", btnYahayuk).CornerRadius = UDim.new(0, 10)
 btnYahayuk.MouseButton1Click:Connect(toggleYahayuk)
 
--- Tombol 2: Uby Imut
 local btnAnim = Instance.new("TextButton", main)
 btnAnim.Size = UDim2.new(0, 180, 0, 50)
 btnAnim.Position = UDim2.new(0.5, -90, 0.45, 0)
@@ -161,7 +157,6 @@ btnAnim.MouseButton1Click:Connect(function()
     loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Animation-Pack-FE-88221"))()
 end)
 
--- Tombol 3: Linz Bau Bawang
 local btnLinz = Instance.new("TextButton", main)
 btnLinz.Name = "LinzBtn"
 btnLinz.Size = UDim2.new(0, 180, 0, 50)
@@ -174,7 +169,7 @@ btnLinz.TextSize = 10
 Instance.new("UICorner", btnLinz).CornerRadius = UDim.new(0, 10)
 btnLinz.MouseButton1Click:Connect(toggleLinz)
 
--- -- 4. ENGINE -- --
+-- -- 4. ENGINE (MODIFIED TO HEAD) -- --
 userInputService.InputBegan:Connect(function(input, gp) 
     if gp then return end
     if input.KeyCode == Enum.KeyCode.K then screenGui.Enabled = not screenGui.Enabled end
@@ -185,21 +180,23 @@ end)
 runService.RenderStepped:Connect(function()
     if _G.HitboxStatus then
         for _, v in pairs(game:GetService('Players'):GetPlayers()) do
-            if v ~= player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            if v ~= player and v.Character and v.Character:FindFirstChild("Head") then
                 pcall(function()
-                    local hrp = v.Character.HumanoidRootPart
-                    hrp.Size = Vector3.new(10, 10, 10) 
-                    hrp.Transparency = 1 
+                    local target = v.Character.Head
+                    target.Size = Vector3.new(10, 10, 10) 
+                    target.Transparency = 0.5 -- Biar kelihatan kepalanya gede pink transparan
+                    target.CanCollide = false
                 end)
             end
         end
     elseif _G.LinzStatus then
         for _, v in pairs(game:GetService('Players'):GetPlayers()) do
-            if v ~= player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            if v ~= player and v.Character and v.Character:FindFirstChild("Head") then
                 pcall(function()
-                    local hrp = v.Character.HumanoidRootPart
-                    hrp.Size = Vector3.new(12, 12, 12) -- Hitbox ukuran 12
-                    hrp.Transparency = 1 
+                    local target = v.Character.Head
+                    target.Size = Vector3.new(12, 12, 12) 
+                    target.Transparency = 0.5
+                    target.CanCollide = false
                 end)
             end
         end
